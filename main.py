@@ -1,7 +1,7 @@
 import discord
 
 # T String
-token_string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.LzYzwqCeHcddTREzFrnRJlZwqeQ"
+token_string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.QqD4gPsCAfiz0nDN_uFdL9zjRW8"
 
 # The connection to discord
 client = discord.Client()
