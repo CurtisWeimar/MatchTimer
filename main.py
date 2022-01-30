@@ -1,7 +1,7 @@
 import discord
 
 # T String
-string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.PigftyP_ByUWnyvTB-iHPK5eOR4"
+token_string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.wbrZVHqig2pP2z9fkU_tgoOL-GE"
 
 # The connection to discord
 client = discord.Client()
@@ -23,5 +23,5 @@ async def on_message(message):
     if message.content.startswith("$hello"):
         await message.channel.send("Hello")
 
-client.run(string)
+client.run(token_string)
 
