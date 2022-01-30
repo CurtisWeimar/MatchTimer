@@ -1,7 +1,7 @@
 import discord
 
 # T String
-string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.9oCgK_DpRO6QE82SAaPNC2CgDT0"
+string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.PigftyP_ByUWnyvTB-iHPK5eOR4"
 
 # The connection to discord
 client = discord.Client()
