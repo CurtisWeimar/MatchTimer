@@ -26,10 +26,10 @@ async def on_ready():
     print(f"We have logged in as {client.user}")
 
 
-@client.event
-async def on_raw_reaction_add(reaction):
-    msg = reaction
-    print(reaction.message_id)
+# @client.event
+# async def on_raw_reaction_add(reaction):
+#     msg = reaction
+#     print(reaction.message_id)
 
 
 def get_game(author):
@@ -71,17 +71,14 @@ def get_game(author):
             return "No game found for user"
 
 
+# TODO: Create / commands
 # Function runs when message is sent
 @client.event
 async def on_message(message):
-    # Set what channel we are in
-    channel = message.channel
 
     # Checks if the message is one that a bot sent
     if message.author == client.user:
         return
-
-    author = message.author
 
     if message.content.startswith("$new"):
         await _new(message=message)
@@ -92,7 +89,11 @@ async def on_message(message):
     if message.content.startswith("$update"):
         await _update(message=message)
 
+    if message.content.startswith("$remove"):
+        await _remove(message=message)
 
+
+# TODO: Combine embed methods with a "type" to combine embed creation into one method
 # Generates the embed with info to DM to someone
 def game_embed(game, date, time, time_zone, streamable):
     embed = discord.Embed(title="New Match!", description="Please schedule this match", color=1752220)
@@ -113,14 +114,44 @@ def upd_game_embed(game, date, time, time_zone, streamable):
     return embed
 
 
-async def _update(message):
+# TODO: Add in preview embed + change embed color
+async def _remove(message):
     channel = message.channel
 
     game = get_game(message.author)
 
-    # Variables
-    month = ""
-    day = ""
+    # Checks for next message
+    def check(m):
+        return message.author == m.author and m.channel == channel
+
+    await channel.send("Please enter the match info in the following order:\n"
+                       "Date (MM-DD),\n")
+
+    date_response = await client.wait_for("message", check=check)
+    date = date_response.content
+
+    error = check_formatting(channel=channel, type="date", string=date)
+
+    if error:
+        await message.channel.send("Warning: '" + date + "' might not match (MM-DD)!")
+
+    # TODO: Move embed creation to combined embed method
+    embed = discord.Embed(title="Match Removal!", description="Please remove the match for this day", color=15548997)
+    embed.add_field(name="Game:", value=game)
+    embed.add_field(name="Date:", value=date)
+
+    # Personal discord ID
+    me = 152535284276264961
+
+    # DM to user the requested date
+    user = await client.fetch_user(me)
+    await user.send(embed=embed)
+
+
+async def _update(message):
+    channel = message.channel
+
+    game = get_game(message.author)
 
     # Checks for next message
     def check(m):
@@ -146,7 +177,7 @@ async def _update(message):
     old_date = old_date_response.content
 
     # Check date formatting just in case
-    error = await check_formatting(channel, old_date, "date")
+    error = check_formatting(channel, old_date, "date")
     print(error)
     if error:
         await message.channel.send("Warning: '" + old_date + "' might not match (MM-DD)!")
@@ -159,7 +190,7 @@ async def _update(message):
     date = date_response.content
 
     # Check date formatting just in case
-    error = await check_formatting(channel, date, "date")
+    error = check_formatting(channel, date, "date")
     print(error)
     if error:
         await message.channel.send("Warning: '" + date + "' might not match (MM-DD)!")
@@ -260,7 +291,7 @@ async def _new(message):
         date_response = await client.wait_for("message", check=check)
         date = date_response.content
         # Check date formatting just in case
-        error = await check_formatting(channel, date, "date")
+        error = check_formatting(channel, date, "date")
         if not error:
 
             # Temporary date variable to hold list
@@ -338,7 +369,7 @@ async def _new(message):
 
 
 # TODO: Create formatting checks for other entries
-async def check_formatting(channel, string, type):
+def check_formatting(channel, string, type):
     regex = ""
     match type:
         case "date":
@@ -351,6 +382,7 @@ async def check_formatting(channel, string, type):
                 return True
 
 
+# TODO: Move to embed method
 def blank_embed(message):
     embed = discord.Embed(title="Match Info", description="Please enter the match info:", color=1752220)
     embed.add_field(name="Game:", value=get_game(message.author))
