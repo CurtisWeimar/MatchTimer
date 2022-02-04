@@ -89,17 +89,144 @@ async def on_message(message):
     if message.content.startswith("$hello"):
         await message.channel.send("Hello")
 
+    if message.content.startswith("$update"):
+        await _update(message=message)
+
 
 # Generates the embed with info to DM to someone
-def game_embed(game, month, day, time, time_zone, streamable):
+def game_embed(game, date, time, time_zone, streamable):
     embed = discord.Embed(title="New Match!", description="Please schedule this match", color=1752220)
     embed.add_field(name="Game:", value=f"{game}")
-    embed.add_field(name="Date:", value=f"{datetime.now().year}-{month}-{day}")
+    embed.add_field(name="Date:", value=f"{datetime.now().year}-{date}")
     embed.add_field(name="Time:", value=f"{time} ({time_zone})")
     embed.add_field(name="Streaming?", value=f"{streamable}")
     return embed
 
 
+# Generates the embed with info to DM to someone for updating
+def upd_game_embed(game, date, time, time_zone, streamable):
+    embed = discord.Embed(title="Match Change!", description="Please change this match's schedule", color=15548997)
+    embed.add_field(name="Game:", value=f"{game}")
+    embed.add_field(name="Date:", value=f"{datetime.now().year}-{date}")
+    embed.add_field(name="Time:", value=f"{time} ({time_zone})")
+    embed.add_field(name="Streaming?", value=f"{streamable}")
+    return embed
+
+
+async def _update(message):
+    channel = message.channel
+
+    game = get_game(message.author)
+
+    # Variables
+    month = ""
+    day = ""
+
+    # Checks for next message
+    def check(m):
+        return message.author == m.author and m.channel == channel
+
+    # Send message to user requesting info
+    await channel.send("Please enter the match info in the following order:\n"
+                       "Old Date (MM-DD),\n"
+                       "New Date (MM-DD),\n"
+                       "New Time (XX:XX AM/PM),\n"
+                       "Time Zone (mst, est, etc.),\n"
+                       "Streamed (Y/N)")
+
+    # Generate blank embed to store their input
+    blank = blank_embed(message=message)
+    blank.insert_field_at(index=1, name="Old Date:", value="mm-dd")  # Some fields are added for update embed
+    blank.remove_field(index=2)
+    blank.insert_field_at(index=2, name="New Date:", value="mm-dd")
+    blank.set_footer(text="Request by: " + str(message.author))  # Insert footer
+    temp_embed = await channel.send(embed=blank)
+
+    old_date_response = await client.wait_for("message", check=check)
+    old_date = old_date_response.content
+
+    # Check date formatting just in case
+    error = await check_formatting(channel, old_date, "date")
+    print(error)
+    if error:
+        await message.channel.send("Warning: '" + old_date + "' might not match (MM-DD)!")
+
+    blank.remove_field(index=1)
+    blank.insert_field_at(index=1, name="Old Date:", value=f"{datetime.now().year}-{old_date}")
+    await temp_embed.edit(embed=blank)
+
+    date_response = await client.wait_for("message", check=check)
+    date = date_response.content
+
+    # Check date formatting just in case
+    error = await check_formatting(channel, date, "date")
+    print(error)
+    if error:
+        await message.channel.send("Warning: '" + date + "' might not match (MM-DD)!")
+
+    blank.remove_field(index=2)
+    blank.insert_field_at(index=2, name="New Date:", value=f"{datetime.now().year}-{date}")
+    await temp_embed.edit(embed=blank)
+
+    # TODO: Put in time formatting
+    # Get time and check formatting
+    _time = await client.wait_for("message", check=check)
+    time = _time.content
+    if time is not None:
+        error = False
+
+        if error:
+            await message.channel.send("Warning: '" + time + "' might not match (XX:XX)!")
+        blank.remove_field(3)
+        blank.insert_field_at(3, name="Date:", value=f"{time}")
+        await temp_embed.edit(embed=blank)
+
+    # Get time zone
+    _time_zone = await client.wait_for("message", check=check)
+    time_zone = _time_zone.content
+    if time_zone is not None:
+        error = False
+        if error:
+            await message.channel.send("Warning: '" + time_zone + "' might not be formatted properly!")
+        # Update their embed
+        blank.remove_field(3)
+        blank.insert_field_at(3, name="Time:", value=f"{time} ({time_zone})")
+        await temp_embed.edit(embed=blank)
+
+    # Get streaming info
+    streaming = ""
+    streaming_response = await client.wait_for("message", check=check)
+    # Check formatting
+    # TODO: Move formatting check into the proper method
+    if streaming_response.content.lower() == "y":
+        streaming = "True"
+    elif streaming_response.content.lower() == "n":
+        streaming = "False"
+    else:
+        streaming = "False"
+        await channel.send("Warning: Streaming info may have been entered wrong!.")
+
+    # Update info on their embed
+    blank.remove_field(4)
+    blank.insert_field_at(4, name="Streaming?", value=f"{streaming}")
+    await temp_embed.edit(embed=blank)
+
+    # Personal discord ID
+    me = 152535284276264961
+
+    # Get the game embed
+    print(old_date)
+    embed = upd_game_embed(game, date, time, time_zone, streaming)
+    embed.insert_field_at(index=1, name="Old Date:", value=f"{datetime.now().year}-{old_date}")
+    embed.set_footer(text="Request by: " + str(message.author))
+
+    # DM to user the requested date
+    user = await client.fetch_user(me)
+    await user.send(embed=embed)
+
+
+# TODO: Create methods to remove some of the code from this. Already starting to me unreadable
+# TODO: Remove while loop. It isn't necessary
 # Called when someone wants to schedule a new match
 async def _new(message):
     # Assign what channel it was in to a variable
@@ -124,6 +251,7 @@ async def _new(message):
                        "Streamed (Y/N)")
     # Generate blank embed
     blank = blank_embed(message=message)
+    blank.set_footer(text="Request by: " + str(message.author))  # Insert footer
     temp_embed = await channel.send(embed=blank)
 
     while True:
@@ -145,8 +273,12 @@ async def _new(message):
             blank.insert_field_at(index=1, name="Date:", value=f"{datetime.now().year}-{month}-{day}")
             await temp_embed.edit(embed=blank)
         else:
-            await channel.message.send("Warning: " + date + " might not match (MM-DD)")
+            await message.channel.send("Warning: '" + date + "' might not match (MM-DD)")
+            blank.remove_field(index=1)
+            blank.insert_field_at(index=1, name="Date:", value=f"{datetime.now().year}-{month}-{day}")
+            await temp_embed.edit(embed=blank)
 
+        # TODO: Put in time formatting
         # Get time and check formatting
         _time = await client.wait_for("message", check=check)
         time = _time.content
@@ -195,7 +327,7 @@ async def _new(message):
     #     game = "Rocket League"
 
     # Get the game embed
-    embed = game_embed(game, month, day, time, time_zone, streaming)
+    embed = game_embed(game, date, time, time_zone, streaming)
     embed.set_footer(text="Request by: " + str(message.author))
 
     # DM to user the requested date
@@ -205,15 +337,18 @@ async def _new(message):
     #     f"Match scheduled for the {datetime.now().year}-{datetime.now().month}-{day.content} at {time.content} ({time_zone.content})")
 
 
+# TODO: Create formatting checks for other entries
 async def check_formatting(channel, string, type):
+    regex = ""
     match type:
         case "date":
             # If it is formatted right (2 Digits "-" 2 Digits)
-            if re.search("\d{1,2}\w{1}\d{1,2}", string) is not None:
+            regex = "\d{1,2}-\d{1,2}"
+            if re.search(regex, string) is not None:
                 print("Found a '-'")
-                return True
-            else:
                 return False
+            else:
+                return True
 
 
 def blank_embed(message):
