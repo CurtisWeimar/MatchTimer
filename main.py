@@ -3,6 +3,7 @@ from datetime import datetime
 import re
 
 # T String
+# noinspection SpellCheckingInspection
 token_string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.QqD4gPsCAfiz0nDN_uFdL9zjRW8"
 
 # Event Coordinator Discord ID
@@ -130,7 +131,7 @@ async def _remove(message):
     date_response = await client.wait_for("message", check=check)
     date = date_response.content
 
-    error = check_formatting(channel=channel, type="date", string=date)
+    error = check_formatting(type="date", string=date)
 
     if error:
         await message.channel.send("Warning: '" + date + "' might not match (MM-DD)!")
@@ -177,7 +178,7 @@ async def _update(message):
     old_date = old_date_response.content
 
     # Check date formatting just in case
-    error = check_formatting(channel, old_date, "date")
+    error = check_formatting(old_date, "date")
     print(error)
     if error:
         await message.channel.send("Warning: '" + old_date + "' might not match (MM-DD)!")
@@ -190,7 +191,7 @@ async def _update(message):
     date = date_response.content
 
     # Check date formatting just in case
-    error = check_formatting(channel, date, "date")
+    error = check_formatting(date, "date")
     print(error)
     if error:
         await message.channel.send("Warning: '" + date + "' might not match (MM-DD)!")
@@ -291,7 +292,7 @@ async def _new(message):
         date_response = await client.wait_for("message", check=check)
         date = date_response.content
         # Check date formatting just in case
-        error = check_formatting(channel, date, "date")
+        error = check_formatting(date, "date")
         if not error:
 
             # Temporary date variable to hold list
@@ -369,8 +370,7 @@ async def _new(message):
 
 
 # TODO: Create formatting checks for other entries
-def check_formatting(channel, string, type):
-    regex = ""
+def check_formatting(string, type):
     match type:
         case "date":
             # If it is formatted right (2 Digits "-" 2 Digits)
@@ -393,4 +393,3 @@ def blank_embed(message):
 
 
 client.run(token_string)
-
