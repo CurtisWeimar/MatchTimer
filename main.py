@@ -4,7 +4,7 @@ import re
 
 # T String
 # noinspection SpellCheckingInspection
-token_string = "OTM3NDQ3MjkyNjE1NjU1NTM2.Yfb30w.QqD4gPsCAfiz0nDN_uFdL9zjRW8"
+token_string = "token_string_here"
 
 # Event Coordinator Discord ID
 evt_coord = 216387270972932096
